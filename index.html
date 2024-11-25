@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generalist Productivity Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f5f5f5;
+            padding: 20px;
+            color: #1a1a1a;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .message-banner {
+            background: linear-gradient(135deg, #f3e8ff, #e0f2fe);
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .task-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        select {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+            min-width: 150px;
+        }
+
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .task-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .category-tag {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.875rem;
+            background: #f3e8ff;
+            color: #8b5cf6;
+        }
+
+        .timer-section {
+            background: linear-gradient(135deg, #e0f2fe, #f3e8ff);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+        }
+     
+        .export-section {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .timer-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #8b5cf6;
+            margin: 20px 0;
+        }
+
+        .energy-prompt {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        @media (max-width: 768px) {
+            .task-input {
+                flex-direction: column;
+            }
+            .timer-display {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="message-banner">
+            <h1 style="color: #4c1d95; margin-bottom: 10px;">Generalist Productivity Tracker</h1>
+            <p id="encouragementMessage">Let's focus on what matters most! ✨</p>
+        </div>
+
+        <div class="card">
+            <div class="task-input">
+                <input type="text" id="taskInput" placeholder="What are you working on?">
+                <select id="categorySelect">
+                    <option value="strategic">Strategic</option>
+                    <option value="creative">Creative</option>
+                    <option value="deep-work">Deep Work</option>
+                    <option value="admin">Admin</option>
+                    <option value="technical">Technical</option>
+                    <option value="learning">Learning</option>
+                </select>
+                <button class="button" onclick="addTask()">Add Task</button>
+            </div>
+            <div id="taskList"></div>
+                <div class="export-section">
+                <button class="button" onclick="exportTasksToCSV()">Export Tasks</button>
+                <button class="button" onclick="exportEnergyToCSV()">Export Energy Data</button>
+                <button class="button" onclick="exportContextToCSV()">Export Context Data</button>
+                 </div>
+        </div>
+
+        <div class="timer-section">
+            <h2>Let's Work!</h2>
+            <div class="timer-display" id="timer">25:00</div>
+            <button class="button" onclick="toggleTimer()" id="timerButton">Start Focus Session</button>
+        </div>
+
+        <div class="card">
+            <h2>Energy Levels</h2>
+            <canvas id="energyChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Context Switching</h2>
+            <canvas id="contextChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let taskHistory = [];
+        let energyHistory = [];
+        // Messages
+        var messages = [
+            "You're doing great! Keep going ✨",
+            "Be kind to yourself today 🌟",
+            "Small steps lead to big achievements 🚀",
+            "You've got this! 💪",
+            "Take a breath, you're making progress 🌈"
+        ];
+
+        function updateEncouragement() {
+            var messageEl = document.getElementById('encouragementMessage');
+            messageEl.textContent = messages[Math.floor(Math.random() * messages.length)];
+        }
+
+        setInterval(updateEncouragement, 300000);
+
+        // Timer
+        var timeLeft = 1500;
+        var timerId = null;
+
+        function toggleTimer() {
+            if (timerId) {
+                clearInterval(timerId);
+                timerId = null;
+                document.getElementById('timerButton').textContent = 'Start Focus Session';
+            } else {
+                timerId = setInterval(updateTimer, 1000);
+                document.getElementById('timerButton').textContent = 'Pause';
+            }
+        }
+
+        function updateTimer() {
+            var minutes = Math.floor(timeLeft / 60);
+            var seconds = timeLeft % 60;
+            document.getElementById('timer').textContent = 
+                minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+            
+            if (timeLeft === 0) {
+                clearInterval(timerId);
+                alert('Time for a break!');
+                timeLeft = 1500;
+                document.getElementById('timerButton').textContent = 'Start Focus Session';
+            } else {
+                timeLeft--;
+            }
+        }
+
+        // Tasks
+        function addTask() {
+          var input = document.getElementById('taskInput');
+          var category = document.getElementById('categorySelect');
+
+          if (input.value.trim() === '') return;
+
+          const taskData = {
+              task: input.value,
+              category: category.value,
+              timestamp: new Date().toISOString(),
+              completed: false
+          };
+
+          taskHistory.push(taskData);
+
+          var taskList = document.getElementById('taskList');
+          var task = document.createElement('div');
+          task.className = 'task-item';
+          task.dataset.timestamp = taskData.timestamp;
+
+          var taskContent = '<div class="task-left">' +
+              '<input type="checkbox" onchange="completeTask(this)">' +
+              '<span>' + taskData.task + '</span>' +
+              '<span class="category-tag">' + taskData.category + '</span>' +
+              '</div>' +
+              '<button onclick="deleteTask(this)" class="button">Delete</button>';
+
+          task.innerHTML = taskContent;
+          taskList.appendChild(task);
+          input.value = '';
+
+          updateContextData(category.value);
+        }
+
+        function completeTask(checkbox) {
+            if (checkbox.checked) {
+                var overlay = document.createElement('div');
+                overlay.className = 'overlay';
+                document.body.appendChild(overlay);
+
+                var prompt = document.createElement('div');
+                prompt.className = 'energy-prompt';
+                prompt.innerHTML = 
+                    '<h3>How\'s your energy after completing this task?</h3>' +
+                    '<input type="range" min="1" max="10" value="5">' +
+                    '<button onclick="saveEnergy(this)" class="button">Save Energy Level</button>';
+                
+                document.body.appendChild(prompt);
+                checkbox.parentElement.style.opacity = '0.5';
+                checkbox.nextElementSibling.style.textDecoration = 'line-through';
+            } else {
+                checkbox.parentElement.style.opacity = '1';
+                checkbox.nextElementSibling.style.textDecoration = 'none';
+            }
+        }
+
+        function saveEnergy(button) {
+          var prompt = button.closest('.energy-prompt');
+          var energyLevel = prompt.querySelector('input').value;
+
+          energyHistory.push({
+              timestamp: new Date().toISOString(),
+              level: energyLevel
+          });
+
+          updateEnergyData(energyLevel);
+
+          prompt.remove();
+          document.querySelector('.overlay').remove();
+        }
+
+        function deleteTask(button) {
+            button.parentElement.remove();
+        }
+// Export functions
+        function exportTasksToCSV() {
+            const headers = ['Timestamp', 'Task', 'Category', 'Completed', 'Completion Time'];
+            const csvContent = [
+                headers.join(','),
+                ...taskHistory.map(task => [
+                    task.timestamp,
+                    `"${task.task}"`,
+                    task.category,
+                    task.completed,
+                    task.completionTime || ''
+                ].join(','))
+            ].join('\n');
+            
+            downloadCSV(csvContent, 'task-history.csv');
+        }
+
+        function exportEnergyToCSV() {
+            const headers = ['Timestamp', 'Energy Level'];
+            const csvContent = [
+                headers.join(','),
+                ...energyHistory.map(entry => [
+                    entry.timestamp,
+                    entry.level
+                ].join(','))
+            ].join('\n');
+            
+            downloadCSV(csvContent, 'energy-history.csv');
+        }
+
+        function exportContextToCSV() {
+            const headers = ['Category', 'Switches'];
+            const csvContent = [
+                headers.join(','),
+                ...contextChart.data.labels.map((label, index) => [
+                    label,
+                    contextChart.data.datasets[0].data[index]
+                ].join(','))
+            ].join('\n');
+            
+            downloadCSV(csvContent, 'context-switches.csv');
+        }
+
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+      }
+        // Charts
+        var energyChart = new Chart(document.getElementById('energyChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Energy Level',
+                    data: [],
+                    borderColor: '#8b5cf6',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        var contextChart = new Chart(document.getElementById('contextChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Strategic', 'Creative', 'Deep Work', 'Admin'],
+                datasets: [{
+                    label: 'Context Switches',
+                    data: [],
+                    backgroundColor: '#8b5cf6'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function updateEnergyData(level) {
+            var now = new Date();
+            var hour = now.getHours();
+            var label = hour + ':00';
+            
+            energyChart.data.labels.push(label);
+            energyChart.data.datasets[0].data.push(level);
+            
+            if (energyChart.data.labels.length > 5) {
+                energyChart.data.labels.shift();
+                energyChart.data.datasets[0].data.shift();
+            }
+            
+            energyChart.update();
+        }
+
+        function updateContextData(category) {
+            var index = contextChart.data.labels.indexOf(category);
+            if (index > -1) {
+                contextChart.data.datasets[0].data[index]++;
+                contextChart.update();
+            }
+        }
+    </script>
+</body>
+</html>
